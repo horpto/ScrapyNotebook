@@ -4,8 +4,8 @@
 
 ## Расширение для Scrapy
   ScrapyNotebook состоит из двух частей:
-1. `ScrapyNotebook.rpyc_service` - расширение **Scrapy**, необходимое для связи с **IPython**
-2. `ScrapyNotebookExt` - само расширение **IPython**
+  1. `ScrapyNotebook.rpyc_service` - расширение **Scrapy**, необходимое для связи с **IPython**
+  2. `ScrapyNotebookExt` - само расширение **IPython**
 
 
 ### rpyc_service
@@ -20,10 +20,13 @@
   Вообще предполагается, что расширение для **IPython** состоит из одного py-файла, который просто копируется в папку для расширений с помощью команды `%install_ext`. Однако, **ScrapyNotebook** состоит из нескольких файлов(так проще и удобней) и частей, связанных общим кодом, то оно устанавливается как полноценный модуль. А в качестве расширения для **IPython** и py-файла для установки выступает `ScrapyNotebookExt.py`, который просто ре-экспортирует нужные функции из главного модуля `scrapy_side.py`
 
 * Install **ScrapyNotebook** packet
-    `pip install git+https://github.com/horpto/ScrapyNotebook.git`
+
+   `pip install git+https://github.com/horpto/ScrapyNotebook.git`
 
 * Install ScrapyNotebookExt(in **IPython**)
-  `%install_ext https://rawgit.com/horpto/ScrapyNotebook/master/ScrapyNotebookExt.py`
+
+   `%install_ext https://rawgit.com/horpto/ScrapyNotebook/master/ScrapyNotebookExt.py`
+
 
 * Install rpyc_service(optional)
   ```python
