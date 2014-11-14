@@ -25,7 +25,7 @@
 
 * Install ScrapyNotebookExt(in **IPython**)
 
-   `%install_ext https://rawgit.com/horpto/ScrapyNotebook/master/ScrapyNotebookExt.py`
+   `%install_ext https://rawgit.com/horpto/ScrapyNotebook/master/ScrapyNotebook/ScrapyNotebookExt.py`
 
 
 * Install rpyc_service(optional)
