@@ -79,7 +79,14 @@ class LoggableSocketStream(SocketStream):
 def print_err(arg):
     print >> sys.stderr, arg
 
-def scrapy_embedding(spidercls=None, url):
+try:
+    from scrapy.utils import DefaultSpider
+except:
+    from scrapy.spider import BaseSpider
+    class DefaultSpider(BaseSpider):
+        name = 'default'
+
+def scrapy_embedding(spidercls=None, url=None):
     spidercls = DefaultSpider if spidercls is None else spidercls
     spider = spidercls()
     spider.start_urls = [url]
@@ -91,44 +98,3 @@ def scrapy_embedding(spidercls=None, url):
     crawler.start()
     log.start(logstdout=False)
     return crawler
-
-from scrapy.spider import BaseSpider
-from scrapy.selector import Selector
-from scrapy.http import Request
-from scrapy.utils.response import get_base_url
-from urlparse import urljoin
-
-class DefaultSpider(BaseSpider):
-    name = 'default'
-
-
-class EarphoneBaseSpider(BaseSpider):
-    name = u'e96_base'
-    allowed_domains = [u'e96.ru']
-    start_urls =[u'http://e96.ru/']
-    
-    def parse(self, response):
-        sel = Selector(response)
-        for req in self.find_links(response, sel):
-            yield req
-
-    def find_links(self, response, sel):
-        url, base_url = response.url, get_base_url(response)
-
-        for link in sel.xpath(u'//a/@href').extract():
-            if self.is_file(link) or self.is_unnecessary(link):
-                continue
-            full_link = urljoin(base_url, link)
-            yield Request(url=full_link)
-
-    def is_file(self, url):
-        return '.' in url.rpartition('/')[-1]
-
-    def is_unnecessary(self, url):
-        return not self.is_right_url(url) or self.is_get_request(url)
-
-    def is_right_url(self, url):
-        return url.startswith("/") or url.startswith('http')
-
-    def is_get_request(self, url):
-        return '?' in url
