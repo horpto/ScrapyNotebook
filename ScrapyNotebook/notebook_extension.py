@@ -33,6 +33,7 @@ import logging
 logger = logging.getLogger()
 
 from scrapy.spider import BaseSpider
+debug = False
 
 @magics_class
 class ScrapyNotebook(Magics):
@@ -49,9 +50,7 @@ class ScrapyNotebook(Magics):
     @classmethod
     def set_scrapy_side(cls, new_value):
         if not isinstance(new_value, ScrapySide):
-            msg = '%s should be ScrapySide instance' % new_value
-            print_err(msg)
-            raise TypeError(msg)
+            raise TypeError('%s should be ScrapySide instance' % new_value)
         cls._scrapy_side.add(new_value)
 
     @classmethod
@@ -98,16 +97,18 @@ class ScrapyNotebook(Magics):
     )
     @line_magic
     def embed_scrapy(self, arg):
-        args = parse_argstring(self.embed_scrapy, arg)
-        if args.spider is not None:
-            args.spider = self.shell.ev(args.spider)
-        if not is_valid_url(args.url):
-            args.url = self.shell.ev(args.url)
-
-        crawler = scrapy_embedding(args.spider, args.url)
-        tn = LocalScrapy(self.shell, crawler)
-        self.add_new_scrapy_side(tn)
-        return tn
+        try:
+            args = parse_argstring(self.embed_scrapy, arg)
+            if args.spider is not None:
+                args.spider = self.shell.ev(args.spider)
+            if not is_valid_url(args.url):
+                args.url = self.shell.ev(args.url)
+            crawler = scrapy_embedding(args.spider, args.url)
+            tn = LocalScrapy(self.shell, crawler)
+            self.add_new_scrapy_side(tn)
+            return tn
+        except Exception as exc:
+            print_err(exc)
 
     @magic_arguments()
     @argument(
@@ -120,23 +121,25 @@ class ScrapyNotebook(Magics):
     )
     @line_magic
     def attach_scrapy(self, arg):
-        args = parse_argstring(self.attach_scrapy, arg)
-        host, port = args.host, args.port
-        assert 1 <= port <= 65536
-
         try:
-            conn = self._get_connection(host, port)
-        except socket.gaierror:
-            msg = "Wrong host: " + host
-            print_err(msg)
-            raise ValueError(msg)
-        except socket.error:
-            print_err("Connection failure")
-            raise EOFError("Connection failure")
+            args = parse_argstring(self.attach_scrapy, arg)
+            host, port = args.host, args.port
+            assert 1 <= port <= 65536
 
-        tn = RemoteScrapy(self.shell, conn)
-        self.add_new_scrapy_side(tn)
-        return tn
+            try:
+                conn = self._get_connection(host, port)
+            except socket.gaierror:
+                print_err("Wrong host: " + host)
+                return
+            except socket.error:
+                print_err("Connection failure")
+                return
+
+            tn = RemoteScrapy(self.shell, conn)
+            self.add_new_scrapy_side(tn)
+            return tn
+        except Exception as exc:
+            print_err(exc)
 
     def transform_arguments(f):
         # this deco should be first in chain(on top)
@@ -152,12 +155,18 @@ class ScrapyNotebook(Magics):
                 if args.scrapy is None:
                     msg = 'You should init or choose scrapy for a start'
                     print_err(msg)
-                    raise IndexError(msg)
+                    return
                 tn = self.shell.ev(args.scrapy)
                 del args.scrapy
-            if cell is None:
-                return f(self, tn, args, line)
-            return f(self, tn, args, line, cell)
+            try:
+                if cell is None:
+                    return f(self, tn, args, line)
+                return f(self, tn, args, line, cell)
+            except Exception as exc:
+                print_err(exc)
+                if debug:
+                    import traceback
+                    traceback.print_exc()
         return func
 
     @transform_arguments

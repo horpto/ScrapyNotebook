@@ -11,8 +11,7 @@ def create_function(src):
     env.pop('__builtins__')
     keys = env.keys()
     if len(keys) != 1:
-        raise ValueError("Should be only one function, but there is %s "
-                            % keys)
+        raise ValueError("Should be only one function, but there is %s" % keys)
     return env[keys[0]]
 
 def mark_source_method(obj, method_name, src):
