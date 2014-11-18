@@ -10,7 +10,7 @@ import inspect
 
 from ScrapyNotebook.utils import print_err
 from ScrapyNotebook.utils.scrapy_utils import get_vars
-from ScrapyNotebook.utils.sources import (mark_source_method, cut_excess)
+from ScrapyNotebook.utils.sources import (mark_source_method, cut_excess, get_source)
 from ScrapyNotebook.utils.rpyc_utils import is_remote
 
 
@@ -51,17 +51,8 @@ class ScrapySide(object):
         keys = set(self.namespace.keys()) - self.builtins
         return keys
 
-    def get_source(self, obj, getsource=inspect.getsource, gettype=type):
-        try:
-            # if obj is module/class/method/function/etc.
-            res = getsource(obj)
-        except TypeError as exc:
-            try:
-                # else source of class
-                res = getsource(gettype(obj))
-            except:
-                raise exc
-        return cut_excess(res)
+    def get_source(self, obj):
+        return get_source(obj)
 
 class LocalScrapy(ScrapySide):
 
@@ -119,12 +110,7 @@ class RemoteScrapy(ScrapySide):
             pass
 
     def get_source(self, obj):
-        if is_remote(obj):
-            getsource = self.conn.root.get_source
-            gettype = lambda x: x.__class__
-        else:
-            getsource = inspect.getsource
-        return super(RemoteScrapy, self).get_source(obj, getsource, gettype)
+        return self.conn.root.get_source(obj)
 
     def set_method(self, obj, method_name, text):
         self.conn.root.set_source(obj, method_name, text)

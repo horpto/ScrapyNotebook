@@ -20,6 +20,7 @@ def mark_source_method(obj, method_name, src):
         obj = type(obj)
     func = create_function(src)
     setattr(func, SRC_LABEL_ATTR, src)
+    return func
 
 
 def get_source(obj):
@@ -31,8 +32,11 @@ def get_source(obj):
     ischanged = any(getattr(val, SRC_LABEL_ATTR, False)
                     for val in attr.itervalues())
     if (inspect.isroutine(obj) or not ischanged):
-        return cut_excess(inspect.getsource(obj))
-
+        try:
+            source = inspect.getsource(obj)
+        except TypeError:
+            source = inspect.getsource(type(obj))
+        return cut_excess(source)
     if inspect.ismodule(obj):
         return join_functions(obj, attr)
     if inspect.isclass(obj):

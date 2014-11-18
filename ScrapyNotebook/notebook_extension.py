@@ -22,8 +22,9 @@ except:
 from ScrapyNotebook.utils import (print_err, is_valid_url,
                                   highlight_python_source)
 from ScrapyNotebook.utils.scrapy_utils import scrapy_embedding
-from ScrapyNotebook.utils.rpyc_utils import LoggableSocketStream
+from ScrapyNotebook.utils.rpyc_utils import (LoggableSocketStream, is_remote)
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
+from ScrapyNotebook.utils.sources import get_source
 
 import rpyc
 import socket
@@ -214,7 +215,7 @@ class ScrapyNotebook(Magics):
         '''Print(if can) source of method or function or class'''
         obj = self.shell.ev(args.arg)
         try:
-            source = tn.get_source(obj)
+            source = tn.get_source(obj) if is_remote(obj) else get_source(obj)
         except (TypeError, IOError) as exc:
             print "Error:", exc
             return
