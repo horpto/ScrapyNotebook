@@ -17,7 +17,8 @@ setup(
     install_requires=[
         'scrapy',
         'ipython',
-        'rpyc>=3.0'
+        'rpyc>=3.0',
+        'pygments',
     ],
     license='mit',
 )

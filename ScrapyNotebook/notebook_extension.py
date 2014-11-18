@@ -10,6 +10,7 @@ from IPython.core.magic import (Magics, magics_class,
 
 from IPython.core.magic_arguments import (argument, magic_arguments,
     parse_argstring)
+from IPython.display import display_html
 
 from tornado.platform.twisted import install
 try:
@@ -18,7 +19,8 @@ except:
     pass
     # ToDo: check if twisted installed right
 
-from ScrapyNotebook.utils import (print_err, is_valid_url)
+from ScrapyNotebook.utils import (print_err, is_valid_url,
+                                  highlight_python_source)
 from ScrapyNotebook.utils.scrapy_utils import scrapy_embedding
 from ScrapyNotebook.utils.rpyc_utils import LoggableSocketStream
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
@@ -212,9 +214,11 @@ class ScrapyNotebook(Magics):
         '''Print(if can) source of method or function or class'''
         obj = self.shell.ev(args.arg)
         try:
-            print(tn.get_source(obj))
+            source = tn.get_source(obj)
         except (TypeError, IOError) as exc:
             print "Error:", exc
+            return
+        display_html(highlight_python_source(source), raw=True)
 
     @transform_arguments
     @argument('object')
