@@ -8,13 +8,14 @@ Created on Fri Sep 26 13:54:42 2014
 import rpyc
 import inspect
 
-from ScrapyNotebook.utils import (get_vars,
-                                  mark_source_method,
-                                  print_err)
+from ScrapyNotebook.utils import print_err
+from ScrapyNotebook.utils.scrapy_utils import get_vars
+from ScrapyNotebook.utils.sources import mark_source_method
+from ScrapyNotebook.utils.rpyc_utils import is_remote
 
 
 class ScrapySide(object):
-    builtins = set(('__builtin__', ))    
+    builtins = set(('__builtin__', ))
     closed = False
 
     def __init__(self, shell, namespace):
@@ -78,7 +79,7 @@ class LocalScrapy(ScrapySide):
 
     def eval(self, text):
         return eval(text, self.namespace)
-    
+
     def execute(self, text):
         exec text in self.namespace
 
@@ -117,12 +118,8 @@ class RemoteScrapy(ScrapySide):
         except KeyError:
             pass
 
-    def _is_remote(self, obj):
-        return isinstance(obj, (rpyc.core.netref.BaseNetref,
-                                rpyc.core.netref.NetrefMetaclass))
-
     def get_source(self, obj):
-        if self._is_remote(obj):
+        if is_remote(obj):
             getsource = self.conn.root.get_source
             gettype = lambda x: x.__class__
         else:

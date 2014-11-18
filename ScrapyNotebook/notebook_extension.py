@@ -18,10 +18,9 @@ except:
     pass
     # ToDo: check if twisted installed right
 
-from ScrapyNotebook.utils import (LoggableSocketStream,
-                                  scrapy_embedding,
-                                  print_err,
-                                  is_valid_url)
+from ScrapyNotebook.utils import (print_err, is_valid_url)
+from ScrapyNotebook.utils.scrapy_utils import scrapy_embedding
+from ScrapyNotebook.utils.rpyc_utils import LoggableSocketStream
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
 
 import rpyc
