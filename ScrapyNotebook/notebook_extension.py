@@ -20,7 +20,8 @@ except:
 
 from ScrapyNotebook.utils import (LoggableSocketStream,
                                   scrapy_embedding,
-                                  print_err)
+                                  print_err,
+                                  is_valid_url)
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
 
 import rpyc
@@ -35,11 +36,13 @@ from scrapy.spider import BaseSpider
 class ScrapyNotebook(Magics):
     # should be None, ScrapySide or set(ScrapySide)
     _scrapy_side = set()
-    
+
     @classmethod
     def scrapy_side(cls):
         if len(cls._scrapy_side) == 1:
-            return cls._scrapy_side.pop()
+            # return the only remaining scrapy side
+            for side in cls._scrapy_side:
+                return side
 
     @classmethod
     def set_scrapy_side(cls, new_value):
@@ -64,9 +67,11 @@ class ScrapyNotebook(Magics):
     @line_magic
     def scrapy_list(self, line):
         'show all available scrapies'
-        if self._scrapy_side:
-            return list(self._scrapy_side)
+        tn = self._scrapy_side
+        if tn:
+            return list(tn)
         print 'No scrapies'
+        return []
 
     @staticmethod
     def _get_connection(host, port):
@@ -74,7 +79,7 @@ class ScrapyNotebook(Magics):
             stream = LoggableSocketStream.connect(host, port)
             return rpyc.classic.connect_stream(stream)
         return rpyc.classic.connect(host, port)
-    
+
     def add_new_scrapy_side(self, scrapy_side):
         self.set_scrapy_side(scrapy_side)
         variables = scrapy_side.namespace
@@ -84,17 +89,18 @@ class ScrapyNotebook(Magics):
 
     @magic_arguments()
     @argument(
-        '-s', '--spider', type=BaseSpider,
-        default=None,
-        help='spider for scrapy'
+        '-s', '--spider', help='spider for scrapy'
     )
     @argument(
-        '-u', '--url', type=unicode,
-        help='start url-page'
+        '-u', '--url', help='start url-page'
     )
     @line_magic
     def embed_scrapy(self, arg):
         args = parse_argstring(self.embed_scrapy, arg)
+        if args.spider is not None:
+            args.spider = self.shell.ev(args.spider)
+        if not is_valid_url(args.url):
+            args.url = self.shell.ev(args.url)
 
         crawler = scrapy_embedding(args.spider, args.url)
         tn = LocalScrapy(self.shell, crawler)
@@ -119,7 +125,7 @@ class ScrapyNotebook(Magics):
         try:
             conn = self._get_connection(host, port)
         except socket.gaierror:
-            msg = "Wrong host: " + str(host)
+            msg = "Wrong host: " + host
             print_err(msg)
             raise ValueError(msg)
         except socket.error:
@@ -131,13 +137,13 @@ class ScrapyNotebook(Magics):
         return tn
 
     def transform_arguments(f):
-        #should be last
+        # this deco should be first in chain(on top)
         @magic_arguments()
-        @argument( '--scrapy', type=ScrapySide, default=None,
+        @argument('-s', '--scrapy', type=str,
                   help='which scrapy use')
         @wraps(f)
-        def func(self, arg):
-            args = parse_argstring(getattr(self, f.__name__), arg)
+        def func(self, line, cell=None):
+            args = parse_argstring(getattr(self, f.__name__), line)
 
             tn = self.scrapy_side()
             if tn is None:
@@ -146,20 +152,24 @@ class ScrapyNotebook(Magics):
                     print_err(msg)
                     raise IndexError(msg)
                 tn = self.shell.ev(args.scrapy)
-            return f(self, tn, args)
+                del args.scrapy
+            if cell is None:
+                return f(self, tn, args, line)
+            return f(self, tn, args, line, cell)
         return func
 
     @transform_arguments
+    @argument('arg', default=u'')
     @line_cell_magic
-    def process_shell(self, tn, args, source=None):
+    def process_shell(self, tn, args, line, text=None):
         '''Execute code on scrapy side.
         Dangerous if code is IO blocking or has infinite loop'''
-        if source is None:
-            source = args
-        else:
-            source = args + '\n' + source
+        source = args.arg
+        if text is not None:
+            source = args.arg + u'\n' + source
         res = tn.execute(source)
 
+        # remove difference of local and remote namespaces
         keys = tn.get_keys()
         for i in tn.keys - keys:
             self.shell.remove(i)
@@ -169,7 +179,7 @@ class ScrapyNotebook(Magics):
 
     @transform_arguments
     @line_magic
-    def stop_scrapy(self, tn, args):
+    def stop_scrapy(self, tn, *args):
         '''Stop scrapy. At all.'''
         tn.stop_scrapy()
         self.delete_scrapy_side(tn)
@@ -183,7 +193,7 @@ class ScrapyNotebook(Magics):
     @transform_arguments
     @line_magic
     def resume_scrapy(self, tn, *args):
-        '''Continue scraping'''
+        '''Continue crawling'''
         tn.resume_scrapy()
 
     @transform_arguments
@@ -197,33 +207,34 @@ class ScrapyNotebook(Magics):
         return tn.spider_stats
 
     @transform_arguments
+    @argument('arg')
     @line_magic
-    def print_source(self, tn, args):
-        '''Print(is can) source of method or function or class'''
-        obj = self.shell.ev(args)
+    def print_source(self, tn, args, line):
+        '''Print(if can) source of method or function or class'''
+        obj = self.shell.ev(args.arg)
         try:
             print(tn.get_source(obj))
         except (TypeError, IOError) as exc:
             print "Error:", exc
 
     @transform_arguments
+    @argument('object')
     @cell_magic
-    def set_method(self, tn, arg, text):
+    def set_method(self, tn, args, line, cell):
         '''Change method some method
         Example:
-        %%set_method MySpider my_aswesome_method_name
+        %%set_method MySpider.my_aswesome_method_name
         def some_method(self, arg):
             pass
         '''
-        arg = arg.strip()
+        arg = args.object.strip()
         try:
-            splitted = arg.split()
+            obj, method_name = arg.rsplit('.', 1)
         except ValueError:
-            splitted = arg.rsplit('.', 1)
-        obj, method_name = splitted
+            obj, method_name = arg.split()
 
         obj = self.shell.ev(obj)
-        tn.set_method(obj, method_name, text)
+        tn.set_method(obj, method_name, cell)
 
     @transform_arguments
     @line_cell_magic
