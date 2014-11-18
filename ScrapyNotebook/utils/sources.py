@@ -44,9 +44,9 @@ def get_source_class(obj, attr=None):
     if attr is None:
         attr = {name: getattr(obj, name) for name in dir(obj)}
     pat = "class {cls_name}({parents}):\n" \
-          "    {defs}\n"
-    defs = join_functions(obj, attr, sep='\n    ',
-                                   in_func_sep='\n    ')
+          "\t{defs}\n".expandtabs(4)
+    defs = join_functions(obj, attr, sep='\n' +' '*4,
+                                   in_func_sep='\n' +' '*4)
     return pat.format(cls_name=obj.__name__,
                       parents=', '.join(t.__name__ for t in obj.__mro__),
                       defs=defs,)
@@ -73,7 +73,7 @@ def join_functions(obj, attr=None, sep='\n\n', in_func_sep='\n'):
     return sep.join(defs)
 
 def cut_excess(func_source, exclude=None):
-    slocs = func_source.expandtabs().splitlines()
+    slocs = func_source.expandtabs(4).splitlines()
     spaces = len(slocs[0]) - len(slocs[0].lstrip())
 
     if not spaces:

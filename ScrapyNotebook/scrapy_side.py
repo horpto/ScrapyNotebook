@@ -10,7 +10,7 @@ import inspect
 
 from ScrapyNotebook.utils import print_err
 from ScrapyNotebook.utils.scrapy_utils import get_vars
-from ScrapyNotebook.utils.sources import mark_source_method
+from ScrapyNotebook.utils.sources import (mark_source_method, cut_excess)
 from ScrapyNotebook.utils.rpyc_utils import is_remote
 
 
@@ -61,7 +61,7 @@ class ScrapySide(object):
                 res = getsource(gettype(obj))
             except:
                 raise exc
-        return res
+        return cut_excess(res)
 
 class LocalScrapy(ScrapySide):
 
