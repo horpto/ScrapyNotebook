@@ -19,8 +19,10 @@ except:
     pass
     # ToDo: check if twisted installed right
 
-from ScrapyNotebook.utils import (print_err, is_valid_url,
-                                  highlight_python_source)
+from ScrapyNotebook.utils import (print_err,
+                                  is_valid_url,
+                                  highlight_python_source,
+                                  transform_arguments as _transform_arguments)
 from ScrapyNotebook.utils.scrapy_utils import scrapy_embedding
 from ScrapyNotebook.utils.rpyc_utils import (LoggableSocketStream, is_remote)
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
@@ -28,12 +30,15 @@ from ScrapyNotebook.utils.sources import get_source
 
 import rpyc
 import socket
-from functools import wraps
 import logging
 logger = logging.getLogger()
 
 from scrapy.spider import BaseSpider
+
 debug = False
+
+transform_arguments = lambda *args, **kwargs: \
+    _transform_arguments(debug=debug, *args, **kwargs)
 
 @magics_class
 class ScrapyNotebook(Magics):
@@ -141,43 +146,11 @@ class ScrapyNotebook(Magics):
         except Exception as exc:
             print_err(exc)
 
-    def transform_arguments(f):
-        # this deco should be first in chain(on top)
-        @magic_arguments()
-        @argument('-s', '--scrapy', type=str,
-                  help='which scrapy use')
-        @wraps(f)
-        def func(self, line, cell=None):
-            args = parse_argstring(getattr(self, f.__name__), line)
-
-            tn = self.scrapy_side()
-            if tn is None:
-                if args.scrapy is None:
-                    msg = 'You should init or choose scrapy for a start'
-                    print_err(msg)
-                    return
-                tn = self.shell.ev(args.scrapy)
-                del args.scrapy
-            try:
-                if cell is None:
-                    return f(self, tn, args, line)
-                return f(self, tn, args, line, cell)
-            except Exception as exc:
-                print_err(exc)
-                if debug:
-                    import traceback
-                    traceback.print_exc()
-        return func
-
-    @transform_arguments
-    @argument('arg', default=u'')
-    @line_cell_magic
-    def process_shell(self, tn, args, line, text=None):
+    @transform_arguments()
+    @cell_magic
+    def process_shell(self, tn, args, line, source):
         '''Execute code on scrapy side.
         Dangerous if code is IO blocking or has infinite loop'''
-        source = args.arg
-        if text is not None:
-            source = args.arg + u'\n' + source
         res = tn.execute(source)
 
         # remove difference of local and remote namespaces
@@ -188,36 +161,36 @@ class ScrapyNotebook(Magics):
         self.shell.push(tn.namespace)
         return res
 
-    @transform_arguments
+    @transform_arguments()
     @line_magic
     def stop_scrapy(self, tn, *args):
         '''Stop scrapy. At all.'''
         tn.stop_scrapy()
         self.delete_scrapy_side(tn)
 
-    @transform_arguments
+    @transform_arguments()
     @line_magic
     def pause_scrapy(self, tn, *args):
         '''Pausing scrapy. To continue use %resume_scrapy'''
         tn.pause_scrapy()
 
-    @transform_arguments
+    @transform_arguments()
     @line_magic
     def resume_scrapy(self, tn, *args):
         '''Continue crawling'''
         tn.resume_scrapy()
 
-    @transform_arguments
+    @transform_arguments()
     @line_magic
     def common_stats(self, tn, *args):
         return tn.get_stats()
 
-    @transform_arguments
+    @transform_arguments()
     @line_magic
     def spider_stats(self, tn, *args):
         return tn.spider_stats
 
-    @transform_arguments
+    @transform_arguments(scrapy_required=False)
     @argument('arg')
     @line_magic
     def print_source(self, tn, args, line):
@@ -230,7 +203,7 @@ class ScrapyNotebook(Magics):
             return
         display_html(highlight_python_source(source), raw=True)
 
-    @transform_arguments
+    @transform_arguments(scrapy_required=False)
     @argument('object')
     @cell_magic
     def set_method(self, tn, args, line, cell):
@@ -249,14 +222,11 @@ class ScrapyNotebook(Magics):
         obj = self.shell.ev(obj)
         tn.set_method(obj, method_name, cell)
 
-    @transform_arguments
+    @transform_arguments()
     @line_cell_magic
     def visualize_scrapy(self, tn, *args):
         '''not Implemented'''
         tn.visualize_scrapy()
-
-    # DELETING EXCESS
-    del transform_arguments
 
 
 _loaded = False
