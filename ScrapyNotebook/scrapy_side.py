@@ -46,6 +46,10 @@ class ScrapySide(object):
     def visualize_scrapy(self):
         print_err('Not implemented yet')
 
+    def push_variables(self, vars):
+        for var, val in vars.iteritems():
+            self.namespace[var] = val
+
     @property
     def get_keys(self):
         keys = set(self.namespace.keys()) - self.builtins
@@ -108,6 +112,10 @@ class RemoteScrapy(ScrapySide):
             del self.conn.namespace['__builtins__']
         except KeyError:
             pass
+
+    def push_variables(self, vars):
+        for var, val in vars.iteritems():
+            self.conn.root.namespace[var] = val
 
     def get_source(self, obj):
         return self.conn.root.get_source(obj)

@@ -23,6 +23,7 @@ from ScrapyNotebook.utils import (print_err,
                                   is_valid_url,
                                   highlight_python_source,
                                   get_value_in_context,
+                                  get_ipython_variables,
                                   transform_arguments as _transform_arguments,)
 from ScrapyNotebook.utils.scrapy_utils import scrapy_embedding
 from ScrapyNotebook.utils.rpyc_utils import (LoggableSocketStream, is_remote)
@@ -36,7 +37,7 @@ logger = logging.getLogger()
 
 from scrapy.spider import BaseSpider
 
-debug = False
+debug = True
 
 transform_arguments = lambda *args, **kwargs: \
     _transform_arguments(debug=debug, *args, **kwargs)
@@ -153,10 +154,13 @@ class ScrapyNotebook(Magics):
     def process_shell(self, tn, args, line, source):
         '''Execute code on scrapy side.
         Dangerous if code is IO blocking or has infinite loop'''
+        namespace = get_ipython_variables(self.shell)
+        tn.push_variables(namespace)
+
         res = tn.execute(source)
 
         # remove difference of local and remote namespaces
-        keys = tn.get_keys()
+        keys = tn.get_keys
         for i in tn.keys - keys:
             self.shell.remove(i)
         tn.keys = keys

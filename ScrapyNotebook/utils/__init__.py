@@ -84,3 +84,8 @@ def get_value_in_context(obj, scrapy_side, shell):
         return scrapy_side.eval(obj)
     except:
         return shell.ev(obj)
+
+
+def get_ipython_variables(shell):
+    who_ls = shell.find_line_magic('who_ls')
+    return {var: shell.ev(var) for var in who_ls()}
