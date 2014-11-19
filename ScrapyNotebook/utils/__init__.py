@@ -35,34 +35,6 @@ def highlight_python_source(source):
         highlight(source, PythonLexer(), formatter))
 
 
-def transform_arguments(f):
-    # this deco should be first in chain(on top)
-    @magic_arguments()
-    @argument('-s', '--scrapy', type=str,
-              help='which scrapy use')
-    @wraps(f)
-    def func(self, line, cell=None):
-        args = parse_argstring(getattr(self, f.__name__), line)
-
-        tn = self.scrapy_side()
-        if tn is None:
-            if args.scrapy is None:
-                msg = 'You should init or choose scrapy for a start'
-                print_err(msg)
-                return
-            tn = self.shell.ev(args.scrapy)
-            del args.scrapy
-        try:
-            if cell is None:
-                return f(self, tn, args, line)
-            return f(self, tn, args, line, cell)
-        except Exception as exc:
-            print_err(exc)
-            if debug:
-                import traceback
-                traceback.print_exc()
-    return func
-
 class transform_arguments(object):
 
     def __init__(self, name=None, scrapy_required=True, debug=False):
@@ -95,14 +67,20 @@ class transform_arguments(object):
         if tn is not None:
             return tn
         if args.scrapy is not None:
-            tn = self.shell.ev(args.scrapy)
+            tn = other.shell.ev(args.scrapy)
             del args.scrapy
             return tn
         if self.scrapy_required:
-            print_err('You should init or choose scrapy for a start')
+            raise ValueException('You should init or choose scrapy for a start')
 
-    def print_exc(self):
+    def print_exc(self, exc):
         print_err(exc)
         if self.debug:
             import traceback
             traceback.print_exc()
+
+def get_value_in_context(obj, scrapy_side, shell):
+    try:
+        return scrapy_side.eval(obj)
+    except:
+        return shell.ev(obj)

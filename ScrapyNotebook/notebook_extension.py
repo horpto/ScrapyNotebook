@@ -22,7 +22,8 @@ except:
 from ScrapyNotebook.utils import (print_err,
                                   is_valid_url,
                                   highlight_python_source,
-                                  transform_arguments as _transform_arguments)
+                                  get_value_in_context,
+                                  transform_arguments as _transform_arguments,)
 from ScrapyNotebook.utils.scrapy_utils import scrapy_embedding
 from ScrapyNotebook.utils.rpyc_utils import (LoggableSocketStream, is_remote)
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
@@ -81,7 +82,7 @@ class ScrapyNotebook(Magics):
 
     @staticmethod
     def _get_connection(host, port):
-        if logger.getEffectiveLevel <= logging.DEBUG:
+        if debug:
             stream = LoggableSocketStream.connect(host, port)
             return rpyc.classic.connect_stream(stream)
         return rpyc.classic.connect(host, port)
@@ -106,8 +107,9 @@ class ScrapyNotebook(Magics):
             args = parse_argstring(self.embed_scrapy, arg)
             if args.spider is not None:
                 args.spider = self.shell.ev(args.spider)
-            if not is_valid_url(args.url):
-                args.url = self.shell.ev(args.url)
+            if not is_valid_url(args.url) \
+               and args.url is not None:
+                    args.url = self.shell.ev(args.url)
             crawler = scrapy_embedding(args.spider, args.url)
             tn = LocalScrapy(self.shell, crawler)
             self.add_new_scrapy_side(tn)
@@ -195,7 +197,7 @@ class ScrapyNotebook(Magics):
     @line_magic
     def print_source(self, tn, args, line):
         '''Print(if can) source of method or function or class'''
-        obj = self.shell.ev(args.arg)
+        obj = get_value_in_context(args.arg, tn, self.shell)
         try:
             source = tn.get_source(obj) if is_remote(obj) else get_source(obj)
         except (TypeError, IOError) as exc:
@@ -219,7 +221,7 @@ class ScrapyNotebook(Magics):
         except ValueError:
             obj, method_name = arg.split()
 
-        obj = self.shell.ev(obj)
+        obj = get_value_in_context(obj, tn, self.shell)
         tn.set_method(obj, method_name, cell)
 
     @transform_arguments()
