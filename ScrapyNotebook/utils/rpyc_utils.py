@@ -3,6 +3,7 @@
 
 import rpyc
 from rpyc.core.stream import (SocketStream, Stream)
+from time import sleep
 
 import logging
 logger = logging.getLogger()

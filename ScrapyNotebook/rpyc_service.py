@@ -11,8 +11,6 @@ from scrapy.utils.reactor import listen_tcp
 from rpyc.core import Connection, Channel
 from rpyc.core.service import SlaveService, ModuleNamespace
 
-from time import sleep
-
 from ScrapyNotebook.utils.sources import (mark_source_method,
                                           get_source)
 from ScrapyNotebook.utils.scrapy_utils import get_vars
