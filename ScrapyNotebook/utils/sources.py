@@ -45,13 +45,20 @@ def get_source(obj):
 
 def get_source_class(obj, attr=None):
     if attr is None:
-        attr = {name: getattr(obj, name) for name in dir(obj)}
+        attr = {}
+        for name in dir(obj):
+            value = getattr(obj, name)
+            if name not in obj.__dict__:
+                continue
+            if name.startswith(('_', '__')) and value is None:
+                continue
+            attr[name] = value
     pat = "class {cls_name}({parents}):\n" \
           "\t{defs}\n".expandtabs(4)
     defs = join_functions(obj, attr, sep='\n' +' '*4,
                                    in_func_sep='\n' +' '*4)
     return pat.format(cls_name=obj.__name__,
-                      parents=', '.join(t.__name__ for t in obj.__mro__),
+                      parents=', '.join(t.__name__ for t in obj.__bases__),
                       defs=defs,)
 
 def join_functions(obj, attr=None, sep='\n\n', in_func_sep='\n'):
@@ -73,6 +80,7 @@ def join_functions(obj, attr=None, sep='\n\n', in_func_sep='\n'):
             spec = '{} = {}'.format(name, str(spec))
         defs.append(in_func_sep.join(spec.splitlines()))
 
+    defs.sort()
     return sep.join(defs)
 
 def cut_excess(func_source, exclude=None):
