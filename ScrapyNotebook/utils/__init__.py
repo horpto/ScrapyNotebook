@@ -50,17 +50,21 @@ class transform_arguments(object):
         @magic_arguments()
         @argument('-s', '--scrapy', help='which scrapy use')
         @wraps(func)
-        def function(other, line, cell=None):
-            args = parse_argstring(getattr(other, self.name), line)
+        def _func(*args, **kwargs):
+            self.deco_body(*args, **kwargs)
+        return _func
+
+    def deco_body(self, other, line, cell=None):
+        args = parse_argstring(getattr(other, self.name), line)
+
+        try:
             tn = self.get_scrapy_side(other, args)
 
-            try:
-                if cell is None:
-                    return self.func(other, tn, args, line)
-                return self.func(other, tn, args, line, cell)
-            except Exception as exc:
-                self.print_exc(exc)
-        return function
+            if cell is None:
+                return self.func(other, tn, args, line)
+            return self.func(other, tn, args, line, cell)
+        except Exception as exc:
+            self.print_exc(exc)
 
     def get_scrapy_side(self, other, args):
         tn = other.scrapy_side()
@@ -71,7 +75,7 @@ class transform_arguments(object):
             del args.scrapy
             return tn
         if self.scrapy_required:
-            raise ValueException('You should init or choose scrapy for a start')
+            raise ValueError('You should init or choose scrapy for a start')
 
     def print_exc(self, exc):
         print_err(exc)
