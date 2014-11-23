@@ -2,9 +2,14 @@
 # -*- encoding: utf-8 -*-
 
 import sys
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import HtmlFormatter
+
+try:
+    from pygments import highlight
+    from pygments.lexers import PythonLexer
+    from pygments.formatters import HtmlFormatter
+    pygments_plugin = True
+except ImportError:
+    pygments_plugin = False
 
 from IPython.core.magic_arguments import (argument, magic_arguments,
     parse_argstring)
@@ -29,6 +34,8 @@ def is_valid_url(url):
     return url is not None and regex.search(url)
 
 def highlight_python_source(source):
+    if not pygments_plugin:
+        return '<pre><code>{}</code></pre'.format(source)
     formatter = HtmlFormatter()
     return '<style type="text/css">{}</style>{}'.format(
         formatter.get_style_defs('.highlight'),

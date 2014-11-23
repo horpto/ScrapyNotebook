@@ -27,6 +27,9 @@
 
    `%install_ext https://rawgit.com/horpto/ScrapyNotebook/master/ScrapyNotebook/ScrapyNotebookExt.py`
 
+* Install pygments (optional; used to highlight python code)
+
+  `pip install pygments`
 
 * Install rpyc_service (optional)
   ```python

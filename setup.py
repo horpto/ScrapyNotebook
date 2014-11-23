@@ -18,7 +18,7 @@ setup(
         'scrapy',
         'ipython',
         'rpyc>=3.0',
-        'pygments',
+        # 'pygments', # Pygments is optional
     ],
     license='mit',
 )
