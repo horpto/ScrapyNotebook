@@ -20,12 +20,14 @@ except:
     # ToDo: check if twisted installed right
 
 from ScrapyNotebook.utils import (print_err,
-                                  is_valid_url,
+                                  get_url_from_ipython,
                                   highlight_python_source,
                                   get_value_in_context,
                                   get_ipython_variables,
                                   transform_arguments as _transform_arguments,)
-from ScrapyNotebook.utils.scrapy_utils import scrapy_embedding
+from ScrapyNotebook.utils.scrapy_utils import (get_spider,
+                                            scrapy_embedding,
+                                            IPythonNotebookShell,)
 from ScrapyNotebook.utils.rpyc_utils import (LoggableSocketStream, is_remote)
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
 from ScrapyNotebook.utils.sources import get_source
@@ -34,8 +36,6 @@ import rpyc
 import socket
 import logging
 logger = logging.getLogger()
-
-from scrapy.spider import BaseSpider
 
 debug = True
 
@@ -106,17 +106,22 @@ class ScrapyNotebook(Magics):
     def embed_scrapy(self, arg):
         try:
             args = parse_argstring(self.embed_scrapy, arg)
-            if args.spider is not None:
-                args.spider = self.shell.ev(args.spider)
-            if not is_valid_url(args.url) \
-               and args.url is not None:
-                    args.url = self.shell.ev(args.url)
-            crawler = scrapy_embedding(args.spider, args.url)
+            url = get_url_from_ipython(args.url, self.shell)
+
+            spider = args.spider
+            if spider is not None:
+                spider = self.shell.ev(spider)
+            spider = get_spider(args.spider, url)
+
+            crawler = scrapy_embedding(url=url, spider=spider,)
+
+            shell = IPythonNotebookShell(self.shell, crawler)
+            shell.start(url=url, spider=spider)
             tn = LocalScrapy(self.shell, crawler)
             self.add_new_scrapy_side(tn)
             return tn
         except Exception as exc:
-            print_err(exc)
+            print_err(exc, debug=debug)
 
     @magic_arguments()
     @argument(
@@ -147,7 +152,7 @@ class ScrapyNotebook(Magics):
             self.add_new_scrapy_side(tn)
             return tn
         except Exception as exc:
-            print_err(exc)
+            print_err(exc, debug=debug)
 
     @transform_arguments()
     @cell_magic
