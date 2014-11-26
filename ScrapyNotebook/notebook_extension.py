@@ -111,9 +111,9 @@ class ScrapyNotebook(Magics):
             spider = args.spider
             if spider is not None:
                 spider = self.shell.ev(spider)
-            spider = get_spider(args.spider, url)
+            spider = get_spider(spider, url)
 
-            crawler = scrapy_embedding(url=url, spider=spider,)
+            crawler = scrapy_embedding(url=url, spider=spider)
 
             shell = IPythonNotebookShell(self.shell, crawler)
             shell.start(url=url, spider=spider)

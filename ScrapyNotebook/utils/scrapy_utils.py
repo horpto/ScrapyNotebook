@@ -48,14 +48,14 @@ except:
 
 def get_spider(spider, url):
     if url is None:
-        url = []
+        return None
     elif not isinstance(url, (list, tuple)):
         url = [url]
 
     if spider is None:
-        spider = DefaultSpider(start_urls=url)
+        spider = DefaultSpider()
     elif is_typeobj(spider):
-        spider = spider(start_urls=url)
+        spider = spider()
     return spider
 
 def scrapy_embedding(spider=None, url=None):
@@ -73,6 +73,9 @@ def scrapy_embedding(spider=None, url=None):
     return crawler
 
 from scrapy.shell import Shell
+from scrapy.http import Request
+from w3lib.url import any_to_uri
+from twisted.internet import reactor, threads, defer
 
 class IPythonNotebookShell(Shell):
 
@@ -96,3 +99,33 @@ class IPythonNotebookShell(Shell):
     def populate_vars(self,*args, **kwargs):
         super(IPythonNotebookShell, self).populate_vars(*args, **kwargs)
         self.current_ipython_shell.push(self.vars)
+
+    def fetch(self, request_or_url, spider=None):
+        if isinstance(request_or_url, Request):
+            request = request_or_url
+            url = request.url
+        else:
+            url = any_to_uri(request_or_url)
+            request = Request(url, dont_filter=True)
+            request.meta['handle_httpstatus_all'] = True
+
+        # ToDo: Bad solution - not work.
+        def callback(x):
+            parent = self.current_ipython_shell.get_parent()
+            self.current_ipython_shell.kernel._publish_status('busy', parent)
+            response, spider = x
+            self.populate_vars(response, request, spider)
+            self.current_ipython_shell.kernel._publish_status('idle', parent)
+        def errback(err):
+            parent = self.current_ipython_shell.get_parent()
+            self.current_ipython_shell.kernel._publish_status('busy', parent)
+            err.printTraceback()
+            self.current_ipython_shell.kernel._publish_status('idle', parent)
+
+        def later():
+            parent = self.current_ipython_shell.get_parent()
+            self.current_ipython_shell.kernel._publish_status('busy', parent)
+            d = self._schedule(request, spider)
+            d.addCallback(callback)
+            d.addErrback(errback)
+        reactor.callLater(0, later)
