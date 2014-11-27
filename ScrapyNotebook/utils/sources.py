@@ -33,9 +33,17 @@ def get_source(obj):
     if (inspect.isroutine(obj) or not ischanged):
         try:
             source = inspect.getsource(obj)
+            return cut_excess(source)
         except TypeError:
+            pass
+        try:
             source = inspect.getsource(type(obj))
-        return cut_excess(source)
+            return cut_excess(source)
+        except:
+            # Ok, cannot get source.
+            # For example, it's class created in IPython
+            # Let's try to collect from methods.
+            pass
     if inspect.ismodule(obj):
         return join_functions(obj, attr)
     if inspect.isclass(obj):
