@@ -11,10 +11,6 @@ try:
 except ImportError:
     pygments_plugin = False
 
-from IPython.core.magic_arguments import (argument, magic_arguments,
-    parse_argstring)
-from functools import wraps
-
 def print_err(arg, debug=False):
     print >> sys.stderr, arg
     if debug:
@@ -43,49 +39,6 @@ def highlight_python_source(source):
     return '<style type="text/css">{}</style>{}'.format(
         formatter.get_style_defs('.highlight'),
         highlight(source, PythonLexer(), formatter))
-
-
-class transform_arguments(object):
-
-    def __init__(self, name=None, scrapy_required=True, debug=False):
-        self.name = name
-        self.debug = debug
-        self.scrapy_required = scrapy_required
-        self.func = None
-
-    def __call__(self, func):
-        self.func = func
-        self.name = self.name or func.__name__
-
-        @magic_arguments()
-        @argument('-s', '--scrapy', help='which scrapy use')
-        @wraps(func)
-        def _func(*args, **kwargs):
-            self.deco_body(*args, **kwargs)
-        return _func
-
-    def deco_body(self, other, line, cell=None):
-        args = parse_argstring(getattr(other, self.name), line)
-
-        try:
-            tn = self.get_scrapy_side(other, args)
-
-            if cell is None:
-                return self.func(other, tn, args, line)
-            return self.func(other, tn, args, line, cell)
-        except Exception as exc:
-            self.print_exc(exc)
-
-    def get_scrapy_side(self, other, args):
-        tn = other.scrapy_side()
-        if tn is not None:
-            return tn
-        if args.scrapy is not None:
-            tn = other.shell.ev(args.scrapy)
-            del args.scrapy
-            return tn
-        if self.scrapy_required:
-            raise ValueError('You should init or choose scrapy for a start')
 
 def get_value_in_context(obj, scrapy_side, shell):
     try:

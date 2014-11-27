@@ -49,8 +49,6 @@ except:
 def get_spider(spider, url):
     if url is None:
         return None
-    elif not isinstance(url, (list, tuple)):
-        url = [url]
 
     if spider is None:
         spider = DefaultSpider()
@@ -122,10 +120,6 @@ class IPythonNotebookShell(Shell):
             err.printTraceback()
             self.current_ipython_shell.kernel._publish_status('idle', parent)
 
-        def later():
-            parent = self.current_ipython_shell.get_parent()
-            self.current_ipython_shell.kernel._publish_status('busy', parent)
-            d = self._schedule(request, spider)
-            d.addCallback(callback)
-            d.addErrback(errback)
-        reactor.callLater(0, later)
+        d = self._schedule(request, spider)
+        d.addCallback(callback)
+        d.addErrback(errback)
