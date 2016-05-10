@@ -105,3 +105,12 @@ def cut_excess(func_source, exclude=None):
     slocs = '\n'.join(s[spaces:] for s in slocs if pred(s))
 
     return slocs
+
+def split_on_last_method(args):
+    arg = args.object.strip()
+    try:
+        obj, method_name = arg.rsplit('.', 1)
+    except ValueError:
+        obj, method_name = arg.split()
+
+    

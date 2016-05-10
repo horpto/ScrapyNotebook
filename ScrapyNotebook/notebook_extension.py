@@ -30,7 +30,7 @@ from ScrapyNotebook.utils.scrapy_utils import (get_spider,
                                             IPythonNotebookShell,)
 from ScrapyNotebook.utils.rpyc_utils import (LoggableSocketStream, is_remote)
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
-from ScrapyNotebook.utils.sources import get_source
+from ScrapyNotebook.utils.sources import get_source, split_on_last_method
 
 import rpyc
 import socket
@@ -42,13 +42,14 @@ from functools import wraps
 
 class transform_arguments(object):
 
-    def __init__(self, name=None, scrapy_required=True):
+    def __init__(self, name=None, scrapy_required=True, magic_type=line_magic):
         self.name = name
         self.scrapy_required = scrapy_required
         self.func = None
+        self.magic_type = magic_type
 
     def __call__(self, func):
-        self.func = func
+        self.func = self.magic_type(func)
         self.name = self.name or func.__name__
 
         @magic_arguments()
@@ -81,6 +82,14 @@ class transform_arguments(object):
         if self.scrapy_required:
             raise ValueError('You should init or choose scrapy for a start')
 
+
+def get_rpyc_connection(host, port):
+    if debug:
+        stream = LoggableSocketStream.connect(host, port)
+        return rpyc.classic.connect_stream(stream)
+    return rpyc.classic.connect(host, port)
+
+
 @magics_class
 class ScrapyNotebook(Magics):
     # should be None, ScrapySide or set(ScrapySide)
@@ -88,10 +97,11 @@ class ScrapyNotebook(Magics):
 
     @classmethod
     def scrapy_side(cls):
-        if len(cls._scrapy_side) == 1:
-            # return the only remaining scrapy side
-            for side in cls._scrapy_side:
-                return side
+        if len(cls._scrapy_side) != 1:
+            return
+        # return the only remaining scrapy side
+        for side in cls._scrapy_side:
+            return side
 
     @classmethod
     def set_scrapy_side(cls, new_value):
@@ -120,12 +130,6 @@ class ScrapyNotebook(Magics):
         print 'No scrapies'
         return []
 
-    @staticmethod
-    def _get_connection(host, port):
-        if debug:
-            stream = LoggableSocketStream.connect(host, port)
-            return rpyc.classic.connect_stream(stream)
-        return rpyc.classic.connect(host, port)
 
     def add_new_scrapy_side(self, scrapy_side):
         self.set_scrapy_side(scrapy_side)
@@ -147,16 +151,7 @@ class ScrapyNotebook(Magics):
             args = parse_argstring(self.embed_scrapy, arg)
             url = get_url_from_ipython(args.url, self.shell)
 
-            spider = args.spider
-            if spider is not None:
-                try:
-                    spider = self.shell.ev(spider)
-                except Exception as exc:
-                    print_err('Spider is None now')
-                    print_err(exc, debug=debug)
-                    # spider is not a variable or expression
-            spider = get_spider(spider, url)
-
+            spider = self._parse_spider(args.spider, url)
             crawler = scrapy_embedding(url=url, spider=spider)
 
             shell = IPythonNotebookShell(self.shell, crawler)
@@ -166,6 +161,16 @@ class ScrapyNotebook(Magics):
             return tn
         except Exception as exc:
             print_err(exc, debug=debug)
+
+    def _parse_spider(self, spider, url):
+        if spider is not None:
+            try:
+                spider = self.shell.ev(spider)
+            except Exception as exc:
+                print_err('Spider is None now')
+                print_err(exc, debug=debug)
+                # spider is not a variable or expression
+        return get_spider(spider, url)
 
     @magic_arguments()
     @argument(
@@ -184,7 +189,7 @@ class ScrapyNotebook(Magics):
             assert 1 <= port <= 65536
 
             try:
-                conn = self._get_connection(host, port)
+                conn = get_rpyc_connection(host, port)
             except socket.gaierror:
                 print_err("Wrong host: " + host)
                 return
@@ -198,8 +203,7 @@ class ScrapyNotebook(Magics):
         except Exception as exc:
             print_err(exc, debug=debug)
 
-    @transform_arguments()
-    @cell_magic
+    @transform_arguments(magic_type=cell_magic)
     def process_shell(self, tn, args, line, source):
         '''Execute code on scrapy side.
         Dangerous if code is IO blocking or has infinite loop'''
@@ -216,38 +220,32 @@ class ScrapyNotebook(Magics):
         self.shell.push(tn.namespace)
         return res
 
-    @transform_arguments()
-    @line_magic
+    @transform_arguments(magic_type=line_magic)
     def stop_scrapy(self, tn, *args):
         '''Stop scrapy. At all.'''
         tn.stop_scrapy()
         self.delete_scrapy_side(tn)
 
-    @transform_arguments()
-    @line_magic
+    @transform_arguments(magic_type=line_magic)
     def pause_scrapy(self, tn, *args):
         '''Pausing scrapy. To continue use %resume_scrapy'''
         tn.pause_scrapy()
 
-    @transform_arguments()
-    @line_magic
+    @transform_arguments(magic_type=line_magic)
     def resume_scrapy(self, tn, *args):
         '''Continue crawling'''
         tn.resume_scrapy()
 
-    @transform_arguments()
-    @line_magic
+    @transform_arguments(magic_type=line_magic)
     def common_stats(self, tn, *args):
         return tn.get_stats()
 
-    @transform_arguments()
-    @line_magic
+    @transform_arguments(magic_type=line_magic)
     def spider_stats(self, tn, *args):
         return tn.spider_stats
 
-    @transform_arguments(scrapy_required=False)
+    @transform_arguments(scrapy_required=False, magic_type=line_magic)
     @argument('arg')
-    @line_magic
     def print_source(self, tn, args, line):
         '''Print(if can) source of method or function or class'''
         obj = get_value_in_context(args.arg, tn, self.shell)
@@ -255,11 +253,11 @@ class ScrapyNotebook(Magics):
             source = tn.get_source(obj) if is_remote(obj) else get_source(obj)
         except (TypeError, IOError) as exc:
             print_err(exc, debug=debug)
+            return
         display_html(highlight_python_source(source), raw=True)
 
-    @transform_arguments(scrapy_required=False)
+    @transform_arguments(scrapy_required=False, magic_type=cell_magic)
     @argument('object')
-    @cell_magic
     def set_method(self, tn, args, line, cell):
         '''Change method some method
         Example:
@@ -267,17 +265,11 @@ class ScrapyNotebook(Magics):
         def some_method(self, arg):
             pass
         '''
-        arg = args.object.strip()
-        try:
-            obj, method_name = arg.rsplit('.', 1)
-        except ValueError:
-            obj, method_name = arg.split()
-
+        obj, method_name = split_on_last_method(args)
         obj = get_value_in_context(obj, tn, self.shell)
         tn.set_method(obj, method_name, cell)
 
-    @transform_arguments()
-    @line_cell_magic
+    @transform_arguments(magic_type=line_cell_magic)
     def visualize_scrapy(self, tn, *args):
         '''not Implemented'''
         tn.visualize_scrapy()
