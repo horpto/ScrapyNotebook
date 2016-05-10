@@ -21,4 +21,7 @@ setup(
         # 'pygments', # Pygments is optional
     ],
     license='mit',
+    classifiers=[
+        "Framework :: IPython",
+    ],
 )
