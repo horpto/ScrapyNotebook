@@ -112,5 +112,6 @@ def split_on_last_method(args):
         obj, method_name = arg.rsplit('.', 1)
     except ValueError:
         obj, method_name = arg.split()
+    return obj, method_name
 
     
