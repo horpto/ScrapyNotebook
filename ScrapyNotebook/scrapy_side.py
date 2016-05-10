@@ -6,12 +6,10 @@ Created on Fri Sep 26 13:54:42 2014
 @author: Александр
 """
 import rpyc
-import inspect
 
 from ScrapyNotebook.utils import print_err
 from ScrapyNotebook.utils.scrapy_utils import get_vars
-from ScrapyNotebook.utils.sources import (mark_source_method, cut_excess, get_source)
-from ScrapyNotebook.utils.rpyc_utils import is_remote
+from ScrapyNotebook.utils.sources import (mark_source_method, get_source)
 
 
 class ScrapySide(object):

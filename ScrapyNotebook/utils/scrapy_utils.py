@@ -6,7 +6,7 @@ from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 
 from scrapy.crawler import Crawler
-from scrapy import log
+#from scrapy import log
 #from scrapy.utils.spider import DefaultSpider as spidercls
 from scrapy.utils.project import get_project_settings
 
@@ -73,7 +73,6 @@ def scrapy_embedding(spider=None, url=None):
 from scrapy.shell import Shell
 from scrapy.http import Request
 from w3lib.url import any_to_uri
-from twisted.internet import reactor, threads, defer
 
 class IPythonNotebookShell(Shell):
 
