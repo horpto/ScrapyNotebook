@@ -25,7 +25,7 @@
 
 * Install ScrapyNotebookExt (in **IPython**)
 
-   `%install_ext https://rawgit.com/horpto/ScrapyNotebook/master/ScrapyNotebook/ScrapyNotebookExt.py`
+    `%install_ext ScrapyNotebook` or `%install_ext https://rawgit.com/horpto/ScrapyNotebook/master/ScrapyNotebook/ScrapyNotebookExt.py`
 
 * Install pygments (optional; used to highlight python code)
 
