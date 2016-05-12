@@ -146,9 +146,9 @@ class ScrapyNotebook(Magics):
         '-u', '--url', help='start url-page'
     )
     @line_magic
-    def embed_scrapy(self, arg):
+    def scrapy_embed(self, arg):
         try:
-            args = parse_argstring(self.embed_scrapy, arg)
+            args = parse_argstring(self.scrapy_embed, arg)
             url = get_url_from_ipython(args.url, self.shell)
 
             spider = self._parse_spider(args.spider, url)
@@ -182,9 +182,9 @@ class ScrapyNotebook(Magics):
         help='host port'
     )
     @line_magic
-    def attach_scrapy(self, arg):
+    def scrapy_attach(self, arg):
         try:
-            args = parse_argstring(self.attach_scrapy, arg)
+            args = parse_argstring(self.scrapy_attach, arg)
             host, port = args.host, args.port
             assert 1 <= port <= 65536
 
@@ -221,18 +221,18 @@ class ScrapyNotebook(Magics):
         return res
 
     @transform_arguments(magic_type=line_magic)
-    def stop_scrapy(self, tn, *args):
+    def scrapy_stop(self, tn, *args):
         '''Stop scrapy. At all.'''
         tn.stop_scrapy()
         self.delete_scrapy_side(tn)
 
     @transform_arguments(magic_type=line_magic)
-    def pause_scrapy(self, tn, *args):
+    def scrapy_pause(self, tn, *args):
         '''Pausing scrapy. To continue use %resume_scrapy'''
         tn.pause_scrapy()
 
     @transform_arguments(magic_type=line_magic)
-    def resume_scrapy(self, tn, *args):
+    def scrapy_resume(self, tn, *args):
         '''Continue crawling'''
         tn.resume_scrapy()
 
@@ -270,7 +270,7 @@ class ScrapyNotebook(Magics):
         tn.set_method(obj, method_name, cell)
 
     @transform_arguments(magic_type=line_cell_magic)
-    def visualize_scrapy(self, tn, *args):
+    def scrapy_visualize(self, tn, *args):
         '''not Implemented'''
         tn.visualize_scrapy()
 

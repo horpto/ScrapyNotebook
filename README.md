@@ -47,17 +47,18 @@
   ```
 
 ## Магические команды
+## Magic commands
 Смотри examples.ipynb
 
 |Команда       |Описание                                                     |
 |--------------|-------------------------------------------------------------|
 |%scrapy_list  |Список действующих scrapy                                    |
-|%embed_scrapy |Запустить локальный scrapy (как scrapy shell)                |
-|%attach_scrapy|Прикрепиться к удаленному scrapy                             |
+|%scrapy_embed |Запустить локальный scrapy (как scrapy shell)                |
+|%scrapy_attach|Прикрепиться к удаленному scrapy                             |
 |%process_shell|Запустить код на стороне scrapy (то есть удаленно)           |
-|%stop_scrapy  |полностью остановить scrapy                                  |
-|%pause_scrapy |Приостановить scrapy                                         |
-|%resume_scrapy|Возобновить выполнение scrapy                                |
+|%scrapy_stop  |полностью остановить scrapy                                  |
+|%scrapy_pause |Приостановить scrapy                                         |
+|%scrapy_resume|Возобновить выполнение scrapy                                |
 |%common_stats |Общая статистика                                             |
 |%spider_stats |Статистика для паука scrapy                                  |
 |%print_source |Напечатать возможный исходник данного метода, класса, функции|
@@ -65,6 +66,7 @@
 ------------------------------------------------------------------------------
 
 ## Добавляемые переменные
+## Variables added to scope:
 |Переменная|Значение                           |
 |----------|-----------------------------------|
 |engine    |ExecutionEngine                    |
