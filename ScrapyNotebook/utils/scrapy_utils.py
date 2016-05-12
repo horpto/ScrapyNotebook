@@ -64,8 +64,6 @@ def scrapy_embedding(spider=None, url=None):
 
     crawler = Crawler(settings)
     crawler.configure()
-    if spider is not None:
-        crawler.crawl(spider)
     crawler.start()
     #log.start(logstdout=False)
     return crawler
