@@ -92,7 +92,7 @@ def get_rpyc_connection(host, port):
 
 @magics_class
 class ScrapyNotebook(Magics):
-    # should be None, ScrapySide or set(ScrapySide)
+    # should be set(ScrapySide)
     _scrapy_side = set()
 
     @classmethod
@@ -119,7 +119,17 @@ class ScrapyNotebook(Magics):
             raise TypeError('%s should be ScrapySide instance' % scrapy_side)
         #  удаляем только этот скрепи
         cls._scrapy_side.discard(scrapy_side)
+        if scrapy_side is not None:
+            scrapy_side.close()
         del scrapy_side
+
+    @classmethod
+    def delete_all_scrapies(cls):
+        sides = cls._scrapy_side
+        for side in list(sides):
+            cls.delete_scrapy_side(side)
+            side.close()
+        cls._scrapy_side = set()
 
     @line_magic
     def scrapy_list(self, line):
@@ -286,5 +296,5 @@ def load_ipython_extension(ip):
     logger.debug("Loaded")
 
 def unload_ipython_extension(ip):
-    ScrapyNotebook.delete_scrapy_side()
+    ScrapyNotebook.delete_all_scrapies()
     logger.debug("Unload")

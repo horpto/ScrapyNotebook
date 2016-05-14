@@ -88,20 +88,21 @@ class RemoteScrapy(ScrapySide):
         super(RemoteScrapy, self).__init__(shell, namespace)
         self.conn = conn
         self.redir = rpyc.classic.redirected_stdio(self.conn)
+        self.redir.__enter__()
 
     def close(self):
         if self.closed:
             return
         self.closed = True
         try:
-            self.redir.restore()
+            self.redir.__exit__(None, None, None)
         except EOFError:
             pass
         finally:
             self.conn.close()
 
     def eval(self, line):
-        self.conn.eval(line)
+        return self.conn.eval(line)
 
     def execute(self, text):
         self.conn.execute(text)
