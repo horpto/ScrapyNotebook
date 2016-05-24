@@ -16,16 +16,19 @@ except:
     # ToDo: check if twisted installed right
 
 from ScrapyNotebook.utils import (print_err,
-                                  get_url_from_ipython,
                                   highlight_python_source,
-                                  get_value_in_context,
-                                  get_ipython_variables,
                                  )
+from ScrapyNotebook.utils.ipython_utils import (get_url_from_ipython,
+                                                get_ipython_variables,
+                                                get_value_in_context,
+                                               )
 from ScrapyNotebook.utils.scrapy_utils import (get_spider,
                                             scrapy_embedding,
                                             IPythonNotebookShell,)
 from ScrapyNotebook.utils.rpyc_utils import (get_rpyc_connection, is_remote)
-from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
+from ScrapyNotebook.scrapy_side import (LocalScrapy,
+                                        RemoteScrapy,
+                                        ScrapySide)
 from ScrapyNotebook.utils.sources import get_source, split_on_last_method
 
 import socket

@@ -2,7 +2,9 @@
 # -*- encoding: utf-8 -*-
 
 import sys
+import cgi
 from types import TypeType, ClassType
+
 try:
     from pygments import highlight
     from pygments.lexers import PythonLexer
@@ -40,21 +42,6 @@ def highlight_python_source(source):
         formatter.get_style_defs('.highlight'),
         highlight(source, PythonLexer(), formatter))
 
-def get_value_in_context(obj, scrapy_side, shell):
-    try:
-        return scrapy_side.eval(obj)
-    except:
-        return shell.ev(obj)
-
-
-def get_ipython_variables(shell):
-    who_ls = shell.find_line_magic('who_ls')
-    return {var: shell.ev(var) for var in who_ls()}
-
 def is_typeobj(obj):
     return isinstance(obj, (TypeType, ClassType))
 
-def get_url_from_ipython(url, shell):
-    if not is_valid_url(url) and url is not None:
-        url = shell.ev(url)
-    return url
