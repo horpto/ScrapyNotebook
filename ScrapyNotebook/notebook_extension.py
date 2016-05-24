@@ -1,10 +1,6 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Mar 01 20:15:47 2014
 
-@author: Александр
-"""
 from IPython.core.magic import (Magics, magics_class,
     line_magic, line_cell_magic, cell_magic)
 

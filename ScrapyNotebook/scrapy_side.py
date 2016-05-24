@@ -1,10 +1,6 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Sep 26 13:54:42 2014
 
-@author: Александр
-"""
 import rpyc
 
 from ScrapyNotebook.utils import print_err
