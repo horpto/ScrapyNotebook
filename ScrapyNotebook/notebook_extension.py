@@ -24,17 +24,17 @@ from ScrapyNotebook.utils import (print_err,
 from ScrapyNotebook.utils.scrapy_utils import (get_spider,
                                             scrapy_embedding,
                                             IPythonNotebookShell,)
-from ScrapyNotebook.utils.rpyc_utils import (LoggableSocketStream, is_remote)
+from ScrapyNotebook.utils.rpyc_utils import (get_rpyc_connection, is_remote)
 from ScrapyNotebook.scrapy_side import (LocalScrapy, RemoteScrapy, ScrapySide)
 from ScrapyNotebook.utils.sources import get_source, split_on_last_method
 
-import rpyc
 import socket
 import logging
 logger = logging.getLogger()
 
 debug = True
 from functools import wraps
+
 
 class transform_arguments(object):
 
@@ -77,13 +77,6 @@ class transform_arguments(object):
             return tn
         if self.scrapy_required:
             raise ValueError('You should init or choose scrapy for a start')
-
-
-def get_rpyc_connection(host, port):
-    if debug:
-        stream = LoggableSocketStream.connect(host, port)
-        return rpyc.classic.connect_stream(stream)
-    return rpyc.classic.connect(host, port)
 
 
 @magics_class
@@ -195,7 +188,7 @@ class ScrapyNotebook(Magics):
             assert 1 <= port <= 65536
 
             try:
-                conn = get_rpyc_connection(host, port)
+                conn = get_rpyc_connection(host, port, debug)
             except socket.gaierror:
                 print_err("Wrong host: " + host)
                 return

@@ -24,6 +24,13 @@ class LoggableSocketStream(SocketStream):
         return '' if buf.endswith('\n') else '\n'
 
 
+def get_rpyc_connection(host, port, debug=False):
+    if debug:
+        stream = LoggableSocketStream.connect(host, port)
+        return rpyc.classic.connect_stream(stream)
+    return rpyc.classic.connect(host, port)
+
+
 class RPyCAsyncStream(Stream):
 
     __slots__ = ("transport", "buffer",)
@@ -66,3 +73,24 @@ class RPyCAsyncStream(Stream):
 def is_remote(obj):
     return isinstance(obj, (rpyc.core.netref.BaseNetref,
                             rpyc.core.netref.NetrefMetaclass))
+
+
+class RedirectedStdio(object):
+    """redirect stdio of remote host to this local host"""
+    
+    def __init__(self, connection):
+        self.connection = connection
+        self.redir = rpyc.classic.redirected_stdio(self.conn)
+        self.redir.__enter__()
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        self.redir.__exit__(type, value, traceback)
+
+    def close(self):
+        try:
+            self.__exit__(None, None, None)
+        except EOFError:
+            pass

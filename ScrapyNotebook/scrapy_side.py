@@ -1,10 +1,10 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 
-import rpyc
 
 from ScrapyNotebook.utils import print_err
 from ScrapyNotebook.utils.scrapy_utils import get_vars
+from ScrapyNotebook.utils.rpyc_utils import RedirectedStdio
 from ScrapyNotebook.utils.sources import (mark_source_method, get_source)
 
 
@@ -83,19 +83,14 @@ class RemoteScrapy(ScrapySide):
         namespace = conn.namespace
         super(RemoteScrapy, self).__init__(shell, namespace)
         self.conn = conn
-        self.redir = rpyc.classic.redirected_stdio(self.conn)
-        self.redir.__enter__()
+        self.remote_stdio = RedirectedStdio(self.conn)
 
     def close(self):
         if self.closed:
             return
         self.closed = True
-        try:
-            self.redir.__exit__(None, None, None)
-        except EOFError:
-            pass
-        finally:
-            self.conn.close()
+        self.remote_stdio.close()
+        self.conn.close()
 
     def eval(self, line):
         return self.conn.eval(line)
