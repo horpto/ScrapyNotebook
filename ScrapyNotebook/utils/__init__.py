@@ -34,6 +34,13 @@ def is_valid_url(url):
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url is not None and regex.search(url)
 
+def escape_html(text):
+    """escape strings for display in HTML"""
+    return cgi.escape(text, quote=True).\
+           replace('\n', '<br />').\
+           replace('\t', '&emsp;').\
+           replace('  ', ' &nbsp;')
+
 def highlight_python_source(source):
     if not pygments_plugin:
         return '<pre><code>{}</code></pre'.format(source)
