@@ -154,7 +154,7 @@ class ScrapyNotebook(Magics):
             url = get_url_from_ipython(args.url, self.shell)
 
             spider = self._parse_spider(args.spider, url)
-            crawler = scrapy_embedding(url=url, spider=spider)
+            crawler = scrapy_embedding(spider=spider, url=url)
 
             shell = IPythonNotebookShell(self.shell, crawler)
             shell.start(url=url, spider=spider)
@@ -211,15 +211,10 @@ class ScrapyNotebook(Magics):
         Dangerous if code is IO blocking or has infinite loop'''
         namespace = get_ipython_variables(self.shell)
         tn.push_variables(namespace)
-
         res = tn.execute(source)
 
         # remove difference of local and remote namespaces
-        keys = tn.get_keys
-        for i in tn.keys - keys:
-            self.shell.remove(i)
-        tn.keys = keys
-        self.shell.push(tn.namespace)
+        tn.repair_namespace()
         return res
 
     @transform_arguments(magic_type=line_magic)

@@ -52,6 +52,14 @@ class ScrapySide(object):
     def get_source(self, obj):
         return get_source(obj)
 
+    def repair_namespace(self):
+        keys = self.get_keys
+        for i in self.keys - keys:
+            self.shell.remove(i)
+        self.keys = keys
+        self.shell.push(self.namespace)
+
+
 class LocalScrapy(ScrapySide):
 
     def __init__(self, shell, crawler):
