@@ -120,3 +120,42 @@ class RemoteScrapy(ScrapySide):
 
     def set_method(self, obj, method_name, text):
         self.conn.root.set_source(obj, method_name, text)
+
+class ScrapySideStore(object):
+    
+    def __init__(self):
+        self.sides = set()
+        self.last_side = None
+
+    @property
+    def scrapy_side(self):
+        #return ONLY ONE side
+        if len(self.sides) != 1:
+            return
+        # return the only remaining scrapy side
+        for side in self.sides:
+            return side
+
+    @scrapy_side.setter
+    def set_scrapy_side(self, side):
+        if not isinstance(side, ScrapySide):
+            raise TypeError('%s should be ScrapySide instance' % side)
+        self.sides.add(side)
+
+    def delete(self, side):
+        if not isinstance(side, ScrapySide):
+            raise TypeError('%s should be ScrapySide instance' % side)
+        #  удаляем только этот скрепи
+        self.sides.discard(side)
+        side.close()
+        del side
+
+    def delete_all(self):
+        sides = self.sides
+        for side in list(sides):
+            self.delete(side)
+        del side, sides
+        self.sides = set()
+
+    def __iter__(self):
+        return iter(self.sides)

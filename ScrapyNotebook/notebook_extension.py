@@ -28,7 +28,8 @@ from ScrapyNotebook.utils.scrapy_utils import (get_spider,
 from ScrapyNotebook.utils.rpyc_utils import (get_rpyc_connection, is_remote)
 from ScrapyNotebook.scrapy_side import (LocalScrapy,
                                         RemoteScrapy,
-                                        ScrapySide)
+                                        ScrapySideStore,
+                                       )
 from ScrapyNotebook.utils.sources import get_source, split_on_last_method
 
 import socket
@@ -71,9 +72,9 @@ class transform_arguments(object):
             print_err(exc, debug=debug)
 
     def get_scrapy_side(self, other, args):
-        tn = other.scrapy_side()
-        if tn is not None:
-            return tn
+        side = other._scrapy_sides.scrapy_side
+        if side is not None:
+            return side
         if args.scrapy is not None:
             tn = other.shell.ev(args.scrapy)
             del args.scrapy
@@ -84,57 +85,18 @@ class transform_arguments(object):
 
 @magics_class
 class ScrapyNotebook(Magics):
-    # should be set(ScrapySide)
-    _scrapy_side = set()
-
-    @classmethod
-    def scrapy_side(cls):
-        if len(cls._scrapy_side) != 1:
-            return
-        # return the only remaining scrapy side
-        for side in cls._scrapy_side:
-            return side
-
-    @classmethod
-    def set_scrapy_side(cls, new_value):
-        if not isinstance(new_value, ScrapySide):
-            raise TypeError('%s should be ScrapySide instance' % new_value)
-        cls._scrapy_side.add(new_value)
-
-    @classmethod
-    def delete_scrapy_side(cls, scrapy_side=None):
-        if scrapy_side is None:
-            del cls._scrapy_side
-            cls._scrapy_side = set()
-            return
-        if not isinstance(scrapy_side, ScrapySide):
-            raise TypeError('%s should be ScrapySide instance' % scrapy_side)
-        #  удаляем только этот скрепи
-        cls._scrapy_side.discard(scrapy_side)
-        if scrapy_side is not None:
-            scrapy_side.close()
-        del scrapy_side
-
-    @classmethod
-    def delete_all_scrapies(cls):
-        sides = cls._scrapy_side
-        for side in list(sides):
-            cls.delete_scrapy_side(side)
-            side.close()
-        cls._scrapy_side = set()
+    _scrapy_sides = ScrapySideStore()
 
     @line_magic
     def scrapy_list(self, line):
         'show all available scrapies'
-        tn = self._scrapy_side
-        if tn:
-            return list(tn)
-        print 'No scrapies'
+        if self._scrapy_sides.scrapy_side:
+            return list(self._scrapy_sides)
+        print('No scrapies')
         return []
 
-
     def add_new_scrapy_side(self, scrapy_side):
-        self.set_scrapy_side(scrapy_side)
+        self._scrapy_sides.scrapy_side = scrapy_side
         variables = scrapy_side.namespace
         if variables:
             self.shell.push(variables)
@@ -221,7 +183,7 @@ class ScrapyNotebook(Magics):
     def scrapy_stop(self, tn, *args):
         '''Stop scrapy. At all.'''
         tn.stop_scrapy()
-        self.delete_scrapy_side(tn)
+        self._scrap_sides.delete(tn)
 
     @transform_arguments(magic_type=line_magic)
     def scrapy_pause(self, tn, *args):
@@ -283,5 +245,5 @@ def load_ipython_extension(ip):
     logger.debug("Loaded")
 
 def unload_ipython_extension(ip):
-    ScrapyNotebook.delete_all_scrapies()
+    ScrapyNotebook._scrapy_sides.delete_all()
     logger.debug("Unload")
