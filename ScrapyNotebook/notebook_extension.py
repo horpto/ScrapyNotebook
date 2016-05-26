@@ -63,11 +63,11 @@ class transform_arguments(object):
         args = parse_argstring(getattr(other, self.name), line)
 
         try:
-            tn = self.get_scrapy_side(other, args)
+            side = self.get_scrapy_side(other, args)
 
             if cell is None:
-                return self.func(other, tn, args, line)
-            return self.func(other, tn, args, line, cell)
+                return self.func(other, side, args, line)
+            return self.func(other, side, args, line, cell)
         except Exception as exc:
             print_err(exc, debug=debug)
 
@@ -76,9 +76,9 @@ class transform_arguments(object):
         if side is not None:
             return side
         if args.scrapy is not None:
-            tn = other.shell.ev(args.scrapy)
+            side = other.shell.ev(args.scrapy)
             del args.scrapy
-            return tn
+            return side
         if self.scrapy_required:
             raise ValueError('You should init or choose scrapy for a start')
 
@@ -118,8 +118,8 @@ class ScrapyNotebook(Magics):
 
             crawler = scrapy_embedding(spidercls)
 
-            shell = IPythonNotebookShell(self.shell, crawler)
-            shell.start(url=url)
+            scrapy_shell = IPythonNotebookShell(self.shell, crawler)
+            scrapy_shell.start(url=url)
             side = LocalScrapy(self.shell, crawler)
             # FIXME: request and response vars push later so they are not printed as loaded
             self.add_new_scrapy_side(side)
@@ -158,55 +158,55 @@ class ScrapyNotebook(Magics):
                 print_err("Connection failure")
                 return
 
-            tn = RemoteScrapy(self.shell, conn)
-            self.add_new_scrapy_side(tn)
-            return tn
+            side = RemoteScrapy(self.shell, conn)
+            self.add_new_scrapy_side(side)
+            return side
         except Exception as exc:
             print_err(exc, debug=debug)
 
     @transform_arguments(magic_type=cell_magic)
-    def process_shell(self, tn, args, line, source):
+    def process_shell(self, side, args, line, source):
         '''Execute code on scrapy side.
         Dangerous if code is IO blocking or has infinite loop'''
         namespace = get_ipython_variables(self.shell)
-        tn.push_variables(namespace)
-        res = tn.execute(source)
+        side.push_variables(namespace)
+        res = side.execute(source)
 
         # remove difference of local and remote namespaces
-        tn.repair_namespace()
+        side.repair_namespace()
         return res
 
     @transform_arguments(magic_type=line_magic)
-    def scrapy_stop(self, tn, *args):
+    def scrapy_stop(self, side, *args):
         '''Stop scrapy. At all.'''
-        tn.stop_scrapy()
-        self._scrap_sides.delete(tn)
+        side.stop_scrapy()
+        self._scrap_sides.delete(side)
 
     @transform_arguments(magic_type=line_magic)
-    def scrapy_pause(self, tn, *args):
+    def scrapy_pause(self, side, *args):
         '''Pausing scrapy. To continue use %resume_scrapy'''
-        tn.pause_scrapy()
+        side.pause_scrapy()
 
     @transform_arguments(magic_type=line_magic)
-    def scrapy_resume(self, tn, *args):
+    def scrapy_resume(self, side, *args):
         '''Continue crawling'''
-        tn.resume_scrapy()
+        side.resume_scrapy()
 
     @transform_arguments(magic_type=line_magic)
-    def common_stats(self, tn, *args):
-        return tn.get_stats()
+    def common_stats(self, side, *args):
+        return side.get_stats()
 
     @transform_arguments(magic_type=line_magic)
-    def spider_stats(self, tn, *args):
-        return tn.spider_stats
+    def spider_stats(self, side, *args):
+        return side.spider_stats
 
     @transform_arguments(scrapy_required=False, magic_type=line_magic)
     @argument('arg')
-    def print_source(self, tn, args, line):
+    def print_source(self, side, args, line):
         '''Print(if can) source of method or function or class'''
-        obj = get_value_in_context(args.arg, tn, self.shell)
+        obj = get_value_in_context(args.arg, side, self.shell)
         try:
-            source = tn.get_source(obj) if is_remote(obj) else get_source(obj)
+            source = side.get_source(obj) if is_remote(obj) else get_source(obj)
         except (TypeError, IOError) as exc:
             print_err(exc, debug=debug)
             return
@@ -214,7 +214,7 @@ class ScrapyNotebook(Magics):
 
     @transform_arguments(scrapy_required=False, magic_type=cell_magic)
     @argument('object')
-    def set_method(self, tn, args, line, cell):
+    def set_method(self, side, args, line, cell):
         '''Change method some method
         Example:
         %%set_method MySpider.my_aswesome_method_name
@@ -222,13 +222,13 @@ class ScrapyNotebook(Magics):
             pass
         '''
         obj, method_name = split_on_last_method(args)
-        obj = get_value_in_context(obj, tn, self.shell)
-        tn.set_method(obj, method_name, cell)
+        obj = get_value_in_context(obj, side, self.shell)
+        side.set_method(obj, method_name, cell)
 
     @transform_arguments(magic_type=line_cell_magic)
-    def scrapy_visualize(self, tn, *args):
+    def scrapy_visualize(self, side, *args):
         '''not Implemented'''
-        tn.visualize_scrapy()
+        side.visualize_scrapy()
 
 
 _loaded = False

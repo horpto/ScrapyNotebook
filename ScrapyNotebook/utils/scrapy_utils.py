@@ -76,8 +76,8 @@ from w3lib.url import any_to_uri
 
 class IPythonNotebookShell(Shell):
 
-    def __init__(self, shell, *args, **kwargs):
-        self.current_ipython_shell = shell
+    def __init__(self, current_ipython_shell, *args, **kwargs):
+        self.current_ipython_shell = current_ipython_shell
         super(IPythonNotebookShell, self).__init__(*args, **kwargs)
 
     def start(self, url=None, request=None, response=None, spider=None):
