@@ -125,7 +125,6 @@ class ScrapySideStore(object):
     
     def __init__(self):
         self.sides = set()
-        self.last_side = None
 
     @property
     def scrapy_side(self):
@@ -137,7 +136,7 @@ class ScrapySideStore(object):
             return side
 
     @scrapy_side.setter
-    def set_scrapy_side(self, side):
+    def scrapy_side(self, side):
         if not isinstance(side, ScrapySide):
             raise TypeError('%s should be ScrapySide instance' % side)
         self.sides.add(side)

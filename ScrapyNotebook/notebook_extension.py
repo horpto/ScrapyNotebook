@@ -22,7 +22,7 @@ from ScrapyNotebook.utils.ipython_utils import (get_url_from_ipython,
                                                 get_ipython_variables,
                                                 get_value_in_context,
                                                )
-from ScrapyNotebook.utils.scrapy_utils import (get_spider,
+from ScrapyNotebook.utils.scrapy_utils import (get_spidercls,
                                             scrapy_embedding,
                                             IPythonNotebookShell,)
 from ScrapyNotebook.utils.rpyc_utils import (get_rpyc_connection, is_remote)
@@ -104,7 +104,7 @@ class ScrapyNotebook(Magics):
 
     @magic_arguments()
     @argument(
-        '-s', '--spider', help='spider for scrapy'
+        '-s', '--spidercls', help='spider class for scrapy'
     )
     @argument(
         '-u', '--url', help='start url-page'
@@ -114,27 +114,24 @@ class ScrapyNotebook(Magics):
         try:
             args = parse_argstring(self.scrapy_embed, arg)
             url = get_url_from_ipython(args.url, self.shell)
+            spidercls = self._parse_spidercls(args.spidercls, url)
 
-            spider = self._parse_spider(args.spider, url)
-            crawler = scrapy_embedding(spider=spider, url=url)
+            crawler = scrapy_embedding(spidercls)
 
             shell = IPythonNotebookShell(self.shell, crawler)
-            shell.start(url=url, spider=spider)
-            tn = LocalScrapy(self.shell, crawler)
-            self.add_new_scrapy_side(tn)
-            return tn
+            shell.start(url=url)
+            side = LocalScrapy(self.shell, crawler)
+            # FIXME: request and response vars push later so they are not printed as loaded
+            self.add_new_scrapy_side(side)
+            return side
         except Exception as exc:
             print_err(exc, debug=debug)
 
-    def _parse_spider(self, spider, url):
-        if spider is not None:
-            try:
-                spider = self.shell.ev(spider)
-            except Exception as exc:
-                print_err('Spider is None now')
-                print_err(exc, debug=debug)
-                # spider is not a variable or expression
-        return get_spider(spider, url)
+    def _parse_spidercls(self, spidercls, url):
+        if spidercls is not None:
+            spidercls = self.shell.ev(spidercls)
+            # spider is not a variable or expression
+        return get_spidercls(spidercls, url)
 
     @magic_arguments()
     @argument(

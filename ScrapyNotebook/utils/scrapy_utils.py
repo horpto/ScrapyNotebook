@@ -5,12 +5,10 @@
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 
-from scrapy.crawler import Crawler
+from scrapy.crawler import CrawlerRunner
 #from scrapy import log
 #from scrapy.utils.spider import DefaultSpider as spidercls
 from scrapy.utils.project import get_project_settings
-
-from ScrapyNotebook.utils import is_typeobj
 
 try:
     import guppy
@@ -30,7 +28,6 @@ def get_vars(crawler):
         'crawler': crawler,
         'extensions': crawler.extensions,
         'stats': crawler.stats,
-        'spiders': crawler.spiders,
         'settings': crawler.settings,
         'est': lambda: print_engine_status(crawler.engine),
         'prefs': print_live_refs,
@@ -42,29 +39,34 @@ def get_vars(crawler):
 try:
     from scrapy.utils import DefaultSpider
 except:
-    from scrapy.spider import Spider
+    from scrapy.spiders import Spider
     class DefaultSpider(Spider):
         name = 'default'
 
-def get_spider(spider, url):
-    if url is None:
-        return None
+def get_spidercls(spidercls, url):
+    if spidercls is None:
+        spidercls = DefaultSpider
+        assert (url is not None), "url not specified"
+    elif not isinstance(spidercls, str):
+        raise TypeError("Wait spider class or string, not %s" % type(spidercls))
+    return spidercls
 
-    if spider is None:
-        spider = DefaultSpider()
-    elif is_typeobj(spider):
-        spider = spider()
-    return spider
-
-def scrapy_embedding(spider=None, url=None):
+def get_scrapy_settings():
     settings = get_project_settings()
-
+    
     from scrapy.commands.shell import Command
     settings.setdict(Command.default_settings, priority='command')
+    return settings
 
-    crawler = Crawler(settings)
-    crawler.configure()
-    crawler.start()
+def scrapy_embedding(spidercls):
+    settings = get_scrapy_settings()
+    # actually we can manually create crawler
+    # but CrawlRunner does it more sophisticated and adds support for str
+    runner = CrawlerRunner(settings)
+    crawler = runner.create_crawler(spidercls)
+    crawler.engine = crawler._create_engine()
+    crawler.engine.start()
+
     #log.start(logstdout=False)
     return crawler
 
@@ -79,6 +81,7 @@ class IPythonNotebookShell(Shell):
         super(IPythonNotebookShell, self).__init__(*args, **kwargs)
 
     def start(self, url=None, request=None, response=None, spider=None):
+        # copypaste from scrapy.shell method Shell.start
         if url:
             self.fetch(url, spider)
         elif request:
