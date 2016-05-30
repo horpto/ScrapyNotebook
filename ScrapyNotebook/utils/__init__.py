@@ -37,9 +37,9 @@ def is_valid_url(url):
 def escape_html(text):
     """escape strings for display in HTML"""
     return cgi.escape(text, quote=True).\
-           replace('\n', '<br />').\
-           replace('\t', '&emsp;').\
-           replace('  ', ' &nbsp;')
+           replace(u'\n', u'<br />').\
+           replace(u'\t', u'&emsp;').\
+           replace(u'  ', u' &nbsp;')
 
 def highlight_python_source(source):
     if not pygments_plugin:

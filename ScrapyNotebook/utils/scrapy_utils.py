@@ -123,3 +123,19 @@ class IPythonNotebookShell(Shell):
         d = self._schedule(request, spider)
         d.addCallback(callback)
         d.addErrback(errback)
+
+
+from scrapy.http.response.html import HtmlResponse
+from scrapy.selector.unified import Selector
+
+def get_selectors(resp, xpath=None):
+    if isinstance(resp, Selector):
+        return [resp]
+    elif isinstance(resp, HtmlResponse):
+        if xpath is None:
+            raise ValueError("xpath is not string")
+        return resp.xpath(xpath)
+    elif isinstance(resp, list):
+        if all(isinstance(i, Selector) for i in resp):
+            return resp
+    raise TypeError("expected Selector, HtmlResponse and xpath or list of Selectors")

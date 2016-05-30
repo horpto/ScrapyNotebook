@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from  ScrapyNotebook.utils import escape_html
+from ScrapyNotebook.utils import escape_html
+from IPython.display import HTML
+
+from scrapy_utils import get_selectors
 
 class Frame(object):
     """
@@ -18,7 +21,7 @@ class Frame(object):
         ></iframe>
         """
 
-    def __init__(self, src, content, width=u"100%", height=u"100%"):
+    def __init__(self, content, src=u'', width=u"100%", height=u"100%"):
         self.src = src
         self.content = content
         self.width = width
@@ -32,3 +35,17 @@ class Frame(object):
                                   width=self.width,
                                   height=self.height,
                                   )
+
+def display_xpath(selectors_or_response, xpath=None, height=u"400"):
+    """display list of elements selecting by xpath or list of selectors
+    
+    example:
+        display_xpath(response, "body/*")
+        
+        selectors = response.xpath("div[@class="quotes"]")
+        display_xpath(selectors)
+    """
+    selectors = get_selectors(selectors_or_response, xpath)
+    frames = (Frame(selector.extract(), height=u"400")._repr_html_()
+                  for selector in selectors)
+    return HTML(u'<br/>'.join(frames))
