@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from ScrapyNotebook.utils import print_err
+from ScrapyNotebook.utils import print_err, exec_func
 from ScrapyNotebook.utils.scrapy_utils import get_vars
 from ScrapyNotebook.utils.rpyc_utils import RedirectedStdio
 from ScrapyNotebook.utils.sources import (mark_source_method, get_source)
@@ -78,7 +78,7 @@ class LocalScrapy(ScrapySide):
         return eval(text, self.namespace)
 
     def execute(self, text):
-        exec text in self.namespace
+        exec_func(text, self.namespace)
 
     def set_method(self, obj, method_name, src):
         func = mark_source_method(obj, method_name, src)

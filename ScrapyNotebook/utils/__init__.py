@@ -1,9 +1,17 @@
 #!/bin/env python
 # -*- encoding: utf-8 -*-
 
+from __future__ import print_function
+
 import sys
 import cgi
-from types import TypeType, ClassType
+
+
+try:
+    from types import TypeType, ClassType
+    class_types = (TypeType, ClassType)
+except ImportError:
+    class_types = (type,)
 
 try:
     from pygments import highlight
@@ -13,8 +21,13 @@ try:
 except ImportError:
     pygments_plugin = False
 
+if sys.version_info.major == 2:
+    exec ("""def exec_func(x, ns={}): return exec x in ns""")
+else:
+    exec_func = eval('exec')
+
 def print_err(arg, debug=False):
-    print >> sys.stderr, arg
+    print(arg, file=sys.stderr)
     if debug:
         import traceback
         traceback.print_exc()
@@ -50,5 +63,5 @@ def highlight_python_source(source):
         highlight(source, PythonLexer(), formatter))
 
 def is_typeobj(obj):
-    return isinstance(obj, (TypeType, ClassType))
+    return isinstance(obj, class_types)
 
